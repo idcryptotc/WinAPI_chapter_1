@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+/WinAPI_chapter_1/WinAPI_chapter_1/Debug/WinAPI_chapter_1.tlog
+/WinAPI_chapter_1/WinAPI_chapter_1/Debug
+/WinAPI_chapter_1/Debug
+/WinAPI_chapter_1/.vs/WinAPI_chapter_1/v15
