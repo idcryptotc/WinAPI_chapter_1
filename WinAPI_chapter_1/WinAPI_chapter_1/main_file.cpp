@@ -1,8 +1,6 @@
 #include <Windows.h>
 #include <tchar.h>
-#include <cmath>
-#define _USE_MATH_DEFINES
-#include <math.h>
+#include <string>
 
 LRESULT __stdcall WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -13,7 +11,7 @@ int screen_y;
 struct MenuButton
 {
 	RECT rt;
-	TCHAR *text;
+	const TCHAR *text;
 	HBRUSH color;
 };
 
@@ -103,10 +101,12 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	};
 	static int step = 0;
 	static bool isWay = false;
-	static int radiusBall = 20;
+	static const int radiusBall = 20;
 	static POINT centreBall = { screen_x / 2, screen_y / 2 };
 	static double angle;
-	static bool isX, isY;
+	static POINT wayBall = {};
+	static POINT startCentre = { screen_x / 2, screen_y / 2 };
+	static int speedBall = 5;
 
 	switch (message)
 	{
@@ -159,35 +159,33 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				
 				if (!isMenu && indexCurrent == 2 && !isWay)
 				{
-					int x = ptMouse.x - screen_x / 2;
-					int y = ptMouse.y - screen_y / 2;
+					int x = ptMouse.x - startCentre.x;
+					int y = ptMouse.y - startCentre.y;
+					wayBall.x = x > 0 ? 1 : -1;
+					wayBall.y = y > 0 ? 1 : -1;
 
-					SetTimer(hWnd, 2, 20, NULL);
+					SetTimer(hWnd, 2, 10, NULL);
 					isWay = true;
 					
-					if (x == 0)
-					{
-						angle = M_PI_2;
-					}
-
-					isX = x > screen_x / 2 ? true : false;
-
-					if (y == 0)
-					{
-						angle = 0.0;
-					}
-
-					isY = y < screen_y / 2 ? true : false;
-
-					if (x != 0 && y != 0)
-					{
-						angle = -atan(double(ptMouse.y - screen_y / 2) / double(ptMouse.x - screen_x / 2));
-					}
-
 					if (x==0 && y==0)
 					{
 						KillTimer(hWnd, 2);
 						isWay = false;
+					}
+					else
+					{
+						if (x == 0)
+						{
+							wayBall.x = 0;
+						}
+						if (y == 0)
+						{
+							wayBall.y = 0;
+						}
+						if (x != 0 && y != 0)
+						{
+							angle = static_cast<double>(y) / static_cast<double>(x);
+						}
 					}
 				}
 			}
@@ -207,6 +205,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			
 			if (indexCurrent == 2 && isWay)
 			{
+				startCentre = centreBall;
 				KillTimer(hWnd, 2);
 				isWay = false;
 			}
@@ -269,6 +268,15 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					Rectangle(hDC, rForOne.left - step, rForOne.top - step, rForOne.right + step, rForOne.bottom + step);
 					break;
 				}
+			case 2:
+				{
+					std::string str = "x = " + std::to_string(centreBall.x) + "  y = " + std::to_string(centreBall.y);
+					SetBkColor(hDC, RGB(255, 255, 255));
+					SetTextColor(hDC, RGB(0, 0, 0));
+					TextOut(hDC, 350, 36, str.data(), str.size());
+					Ellipse(hDC, centreBall.x - radiusBall, centreBall.y - radiusBall, centreBall.x + radiusBall, centreBall.y + radiusBall);
+					break;
+				}
 			default:
 				{
 					break;
@@ -324,52 +332,46 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 			case 2:
 				{
-					if (isX)
+					if (wayBall.x == 0)
 					{
-						if (centreBall.x + radiusBall >= screen_x)
+						if (centreBall.y + wayBall.y * speedBall >= screen_y - radiusBall || centreBall.y + wayBall.y * speedBall <= radiusBall)
 						{
-							isX = false;
+							wayBall.y = -wayBall.y;
+							startCentre = centreBall;
 						}
-						else
-						{
-							++centreBall.x;
-						}
-					}
-					else
-					{
-						if (centreBall.x - radiusBall <= 0)
-						{
-							isX = true;
-						}
-						else
-						{
-							--centreBall.x;
-						}
-					}
 
-					if (!isY)
-					{
-						if (centreBall.y + radiusBall >= screen_y)
-						{
-							isY = true;
-						}
-						else
-						{
-							++centreBall.y;
-						}
+						centreBall.y += wayBall.y*speedBall;
 					}
-					else
+					if (wayBall.y == 0)
 					{
-						if (centreBall.y - radiusBall <= 0)
+						if (centreBall.x + wayBall.x * speedBall >= screen_x - radiusBall || centreBall.x + wayBall.x * speedBall <= radiusBall)
 						{
-							isY = false;
+							wayBall.x = -wayBall.x;
+							startCentre = centreBall;
 						}
-						else
-						{
-							--centreBall.y;
-						}
-					}
 
+						centreBall.x += wayBall.x*speedBall;
+					}
+					if (wayBall.x != 0 && wayBall.y != 0)
+					{
+						if (centreBall.x + wayBall.x*speedBall >= screen_x - radiusBall || centreBall.x + wayBall.x*speedBall <= radiusBall)
+						{
+							wayBall.x = -wayBall.x;
+							angle = -angle;
+							startCentre = centreBall;
+						}
+
+						centreBall.x += wayBall.x*speedBall;
+
+						if (angle * (centreBall.x - startCentre.x) + startCentre.y >= screen_y - radiusBall
+							|| angle * (centreBall.x - startCentre.x) + startCentre.y <= radiusBall)
+						{
+							angle = -angle;
+							startCentre = centreBall;
+						}
+
+						centreBall.y = angle * (centreBall.x - startCentre.x) + startCentre.y;
+					}
 					break;
 				}
 			}
