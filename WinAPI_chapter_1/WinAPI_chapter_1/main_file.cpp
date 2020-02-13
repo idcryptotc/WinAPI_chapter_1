@@ -1,12 +1,17 @@
 #include <Windows.h>
 #include <tchar.h>
 #include <string>
+#include <cmath>
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include "resource.h"
 
 LRESULT __stdcall WndProc(HWND, UINT, WPARAM, LPARAM);
 
 TCHAR WinName[] = _T("Main");
 int screen_x;
 int screen_y;
+HINSTANCE hMain;
 
 struct MenuButton
 {
@@ -20,6 +25,7 @@ int __stdcall _tWinMain(HINSTANCE This, HINSTANCE Prev, LPTSTR cmd, int mode)
 	HWND hWnd;
 	MSG msg;
 	WNDCLASS wcMain;
+	hMain = This;
 
 	wcMain.hInstance = This;
 	wcMain.lpszClassName = WinName;
@@ -107,6 +113,9 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static POINT wayBall = {};
 	static POINT startCentre = { screen_x / 2, screen_y / 2 };
 	static int speedBall = 5;
+	static HBITMAP wood = LoadBitmap(hMain, MAKEINTRESOURCE(IDB_BITMAP1));
+	HBITMAP tempScr;
+	std::string coord;
 
 	switch (message)
 	{
@@ -186,6 +195,20 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						{
 							angle = static_cast<double>(y) / static_cast<double>(x);
 						}
+					}
+				}
+			
+				if (!isMenu && indexCurrent == 3)
+				{
+					if (ptMouse.x > screen_x / 2 - 280
+						&& ptMouse.x < screen_x / 2 + 280
+						&& ptMouse.y > screen_y / 2 - 280
+						&& ptMouse.y < screen_y / 2 + 280)
+					{
+						char x = static_cast<char>((ptMouse.x - screen_x/2 + 280) / 70 + 'A');
+						int y = (-ptMouse.y + screen_y/2 + 280) / 70 + 1;
+						coord = x + std::to_string(y);
+						MessageBox(hWnd, coord.data(), _T("Êëåòêà"), MB_OK);
 					}
 				}
 			}
@@ -270,11 +293,20 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 			case 2:
 				{
-					std::string str = "x = " + std::to_string(centreBall.x) + "  y = " + std::to_string(centreBall.y);
+					std::string str = "x = " + std::to_string(centreBall.x) + "  y = " + std::to_string(centreBall.y) + "  ËÊÌ - ñòàðò  ÏÊÌ - ñòîï";
 					SetBkColor(hDC, RGB(255, 255, 255));
 					SetTextColor(hDC, RGB(0, 0, 0));
 					TextOut(hDC, 350, 36, str.data(), str.size());
 					Ellipse(hDC, centreBall.x - radiusBall, centreBall.y - radiusBall, centreBall.x + radiusBall, centreBall.y + radiusBall);
+					break;
+				}
+			case 3:
+				{
+					HDC mem = CreateCompatibleDC(hDC);
+					tempScr = CreateCompatibleBitmap(hDC, screen_x, screen_y);
+					SelectObject(mem, wood);
+					BitBlt(hDC, screen_x / 2 - 293, screen_y / 2 - 293, 586, 586, mem, 0, 0, SRCCOPY);
+					DeleteDC(mem);
 					break;
 				}
 			default:
@@ -361,7 +393,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							startCentre = centreBall;
 						}
 
-						centreBall.x += wayBall.x*speedBall;
+						centreBall.x += wayBall.x*speedBall*cos(atan(angle));
 
 						if (angle * (centreBall.x - startCentre.x) + startCentre.y >= screen_y - radiusBall
 							|| angle * (centreBall.x - startCentre.x) + startCentre.y <= radiusBall)
@@ -383,6 +415,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			DeleteObject(brColorBtn);
 			DeleteObject(brColorBtnClick);
+			DeleteObject(wood);
 			KillTimer(hWnd, 1);
 			KillTimer(hWnd, 2);
 			PostQuitMessage(0);
