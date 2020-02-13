@@ -5,6 +5,9 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "resource.h"
+#include <time.h>
+#include <list>
+#include <iterator>
 
 LRESULT __stdcall WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -22,6 +25,7 @@ struct MenuButton
 
 int __stdcall _tWinMain(HINSTANCE This, HINSTANCE Prev, LPTSTR cmd, int mode)
 {
+	srand(time(NULL));
 	HWND hWnd;
 	MSG msg;
 	WNDCLASS wcMain;
@@ -79,7 +83,6 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	HDC hdc, hDC;
 	HBITMAP hScreen, oldBmp;
 	PAINTSTRUCT ps;
-	static int time = 0;
 	static const RECT btnClose = { screen_x - 30, 0, screen_x, 30 };
 	static const TCHAR textBtnClose[] = _T("X");
 	static HBRUSH brColorBtn = CreateSolidBrush(RGB(200, 0, 0));
@@ -116,18 +119,17 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static HBITMAP wood = LoadBitmap(hMain, MAKEINTRESOURCE(IDB_BITMAP1));
 	HBITMAP tempScr;
 	std::string coord;
+	static int x = rand() % ((screen_x - 20) * 3 / 4) + 10;
+	static int y = rand() % ((screen_y - 80) * 3 / 4) + 70;
+	static int w = x + rand() % (screen_x / 4);
+	static int h = y + rand() % (screen_y / 4);
+	static RECT rt5 = { x, y, w, h };
+	static std::list<RECT> lRect;
+	lRect.push_back(rt5);
+	static std::list<RECT>::iterator iter;
 
 	switch (message)
 	{
-	case WM_CREATE:
-		{
-			SetTimer(hWnd, 1, 1000, NULL);
-			break;
-		}
-	case WM_SIZE:
-		{
-			break;
-		}
 	case WM_LBUTTONUP:
 		{
 			POINT ptMouse = { LOWORD(lParam), HIWORD(lParam) };
@@ -153,7 +155,10 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						mb[i].color = brColorBtnClick;
 						isMenu = true;
 						step = 0;
+						KillTimer(hWnd, 1);
 						KillTimer(hWnd, 2);
+						KillTimer(hWnd, 3);
+						lRect.clear();
 						break;
 					}
 				}
@@ -166,6 +171,11 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				}
 				
+				if (isMenu && indexCurrent == 1)
+				{
+					SetTimer(hWnd, 1, 1000, NULL);
+				}
+
 				if (!isMenu && indexCurrent == 2 && !isWay)
 				{
 					int x = ptMouse.x - startCentre.x;
@@ -175,8 +185,8 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 					SetTimer(hWnd, 2, 10, NULL);
 					isWay = true;
-					
-					if (x==0 && y==0)
+
+					if (x == 0 && y == 0)
 					{
 						KillTimer(hWnd, 2);
 						isWay = false;
@@ -197,7 +207,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						}
 					}
 				}
-			
+
 				if (!isMenu && indexCurrent == 3)
 				{
 					if (ptMouse.x > screen_x / 2 - 280
@@ -205,11 +215,16 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						&& ptMouse.y > screen_y / 2 - 280
 						&& ptMouse.y < screen_y / 2 + 280)
 					{
-						char x = static_cast<char>((ptMouse.x - screen_x/2 + 280) / 70 + 'A');
-						int y = (-ptMouse.y + screen_y/2 + 280) / 70 + 1;
+						char x = static_cast<char>((ptMouse.x - screen_x / 2 + 280) / 70 + 'A');
+						int y = (-ptMouse.y + screen_y / 2 + 280) / 70 + 1;
 						coord = x + std::to_string(y);
 						MessageBox(hWnd, coord.data(), _T("Клетка"), MB_OK);
 					}
+				}
+				
+				if (isMenu && indexCurrent == 4)
+				{
+					SetTimer(hWnd, 3, 100, NULL);
 				}
 			}
 
@@ -238,7 +253,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	case WM_ACTIVATEAPP:
 		{
-			SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 1);
+			//SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 1);
 			break;
 		}
 	case WM_PAINT:
@@ -309,6 +324,15 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					DeleteDC(mem);
 					break;
 				}
+			case 4:
+				{
+					for (iter = lRect.begin(); iter != lRect.end(); ++iter)
+					{
+						Rectangle(hDC, iter->left, iter->top, iter->right, iter->bottom);
+					}
+
+					break;
+				}
 			default:
 				{
 					break;
@@ -331,7 +355,6 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 			case 1:
 				{
-					++time;
 					static bool isUpper = true;
 
 					if (indexCurrent == 1)
@@ -360,6 +383,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						}
 					}
 					
+					InvalidateRect(hWnd, NULL, TRUE);
 					break;
 				}
 			case 2:
@@ -404,11 +428,22 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 						centreBall.y = angle * (centreBall.x - startCentre.x) + startCentre.y;
 					}
+
+					InvalidateRect(hWnd, NULL, TRUE);
+					break;
+				}
+			case 3:
+				{
+					x = rand() % ((screen_x - 20) * 3 / 4) + 10;
+					y = rand() % ((screen_y - 80) * 3 / 4) + 70;
+					w = x + rand() % (screen_x / 4);
+					h = y + rand() % (screen_y / 4);
+					rt5 = { x, y, w, h };
+					InvalidateRect(hWnd, NULL, TRUE);
 					break;
 				}
 			}
 
-			InvalidateRect(hWnd, NULL, TRUE);
 			break;
 		}
 	case WM_DESTROY:
@@ -418,6 +453,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DeleteObject(wood);
 			KillTimer(hWnd, 1);
 			KillTimer(hWnd, 2);
+			KillTimer(hWnd, 3);
 			PostQuitMessage(0);
 			break;
 		}
