@@ -124,6 +124,7 @@
     <ResourceCompile Include="WinAPI_chapter_1.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="timer_circle.bmp" />
     <Image Include="wood.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
