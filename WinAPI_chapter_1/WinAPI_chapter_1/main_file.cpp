@@ -117,7 +117,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static POINT startCentre = { screen_x / 2, screen_y / 2 };
 	static int speedBall = 5;
 	static HBITMAP wood = LoadBitmap(hMain, MAKEINTRESOURCE(IDB_BITMAP1));
-	HBITMAP tempScr;
+	HBITMAP tempScr = NULL;
 	std::string coord;
 	static int x = rand() % ((screen_x - 20) * 3 / 4) + 10;
 	static int y = rand() % ((screen_y - 80) * 3 / 4) + 70;
@@ -125,11 +125,66 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static int h = y + rand() % (screen_y / 4);
 	static RECT rt5 = { x, y, w, h };
 	static std::list<RECT> lRect;
-	lRect.push_back(rt5);
 	static std::list<RECT>::iterator iter;
+	static HBITMAP timer_circle = LoadBitmap(hMain, MAKEINTRESOURCE(IDB_BITMAP2));
+	static BITMAP bmpTimer = {};
+	static HPEN penArrowSecond = CreatePen(PS_SOLID, 4, RGB(0, 150, 0));
+	static HPEN penArrowMinute = CreatePen(PS_SOLID, 6, RGB(150, 0, 0));
+	static HPEN penArrowHour = CreatePen(PS_SOLID, 10, RGB(0, 0, 150));
+	static HPEN penDefault = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+	static int xArrowSecond, yArrowSecond;
+	static int xArrowMinute, yArrowMinute;
+	static int xArrowHour, yArrowHour;
+	static bool isStartTimer = false;
+	static double angleArrowSecond = -270.0;
+	static double angleArrowMinute = -270.0;
+	static double angleArrowHour = -270.0;
+	static int timer6 = 0;
+	static SYSTEMTIME st;
 
 	switch (message)
 	{
+	case WM_KEYUP:
+		{
+			int key = (wParam);
+
+			if (key == ' ' && indexCurrent == 5)
+			{
+				GetSystemTime(&st);
+				KillTimer(hWnd, 4);
+				angleArrowSecond = -270.0 - st.wSecond*6;
+				angleArrowMinute = -270.0 - st.wMinute*6 - st.wSecond / 10;
+				angleArrowHour = -270.0 - (st.wHour+3)*30 - st.wMinute * 30 / 60;
+
+				while (angleArrowSecond < -360.0)
+				{
+					angleArrowSecond += 360.0;
+				}
+
+				xArrowSecond = 310 * cos(angleArrowSecond * M_PI / 180) + screen_x / 2;
+				yArrowSecond = -310 * sin(angleArrowSecond * M_PI / 180) + screen_y / 2;
+
+				while (angleArrowMinute < -360.0)
+				{
+					angleArrowMinute += 360.0;
+				}
+
+				xArrowMinute = 290 * cos(angleArrowMinute * M_PI / 180) + screen_x / 2;
+				yArrowMinute = -290 * sin(angleArrowMinute * M_PI / 180) + screen_y / 2;
+
+				while (angleArrowHour < -360.0)
+				{
+					angleArrowHour += 360.0;
+				}
+
+				xArrowHour = 180 * cos(angleArrowHour * M_PI / 180) + screen_x / 2;
+				yArrowHour = -180 * sin(angleArrowHour * M_PI / 180) + screen_y / 2;
+				SetTimer(hWnd, 4, 100, NULL);
+				InvalidateRect(hWnd, NULL, TRUE);
+			}
+
+			break;
+		}
 	case WM_LBUTTONUP:
 		{
 			POINT ptMouse = { LOWORD(lParam), HIWORD(lParam) };
@@ -158,6 +213,8 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						KillTimer(hWnd, 1);
 						KillTimer(hWnd, 2);
 						KillTimer(hWnd, 3);
+						KillTimer(hWnd, 4);
+						DeleteObject(tempScr);
 						lRect.clear();
 						break;
 					}
@@ -226,6 +283,35 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					SetTimer(hWnd, 3, 100, NULL);
 				}
+
+				if (isMenu && indexCurrent == 5)
+				{
+					angleArrowSecond = -270.0;
+					xArrowSecond = screen_x / 2;
+					yArrowSecond = screen_y / 2 - 310;
+					angleArrowMinute = -270.0;
+					xArrowMinute = screen_x / 2;
+					yArrowMinute = screen_y / 2 - 290;
+					angleArrowHour = -270.0;
+					xArrowHour = screen_x / 2;
+					yArrowHour = screen_y / 2 - 180;
+					GetObject(timer_circle, sizeof(bmpTimer), &bmpTimer);
+					timer6 = 0;
+				}
+
+				if (!isMenu && indexCurrent == 5)
+				{
+					if (!isStartTimer)
+					{
+						SetTimer(hWnd, 4, 100, NULL);
+						isStartTimer = true;
+					}
+					else
+					{
+						KillTimer(hWnd, 4);
+						isStartTimer = false;
+					}
+				}
 			}
 
 			InvalidateRect(hWnd, NULL, TRUE);
@@ -246,6 +332,28 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				startCentre = centreBall;
 				KillTimer(hWnd, 2);
 				isWay = false;
+			}
+
+			if (indexCurrent == 5)
+			{
+				if (!isStartTimer)
+				{
+					angleArrowSecond = -270.0;
+					xArrowSecond = screen_x / 2;
+					yArrowSecond = screen_y / 2 - 310;
+					angleArrowMinute = -270.0;
+					xArrowMinute = screen_x / 2;
+					yArrowMinute = screen_y / 2 - 290;
+					angleArrowHour = -270.0;
+					xArrowHour = screen_x / 2;
+					yArrowHour = screen_y / 2 - 180;
+					timer6 = 0;
+				}
+				else
+				{
+					isStartTimer = false;
+					KillTimer(hWnd, 4);
+				}
 			}
 
 			InvalidateRect(hWnd, NULL, TRUE);
@@ -326,11 +434,48 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 			case 4:
 				{
+					lRect.push_back(rt5);
+
+					if (lRect.size() > 200)
+					{
+						lRect.pop_front();
+					}
+
 					for (iter = lRect.begin(); iter != lRect.end(); ++iter)
 					{
 						Rectangle(hDC, iter->left, iter->top, iter->right, iter->bottom);
 					}
 
+					break;
+				}
+			case 5:
+				{
+					HDC mem = CreateCompatibleDC(hDC);
+					tempScr = CreateCompatibleBitmap(hDC, screen_x, screen_y);
+					SelectObject(mem, timer_circle);
+					BitBlt
+					(
+						hDC, 
+						screen_x / 2 - bmpTimer.bmWidth / 2, 
+						screen_y / 2 - bmpTimer.bmHeight / 2, 
+						bmpTimer.bmWidth, 
+						bmpTimer.bmHeight, 
+						mem, 
+						0, 
+						0, 
+						SRCCOPY
+					);
+					DeleteDC(mem);
+					SelectObject(hDC, penArrowHour);
+					MoveToEx(hDC, screen_x / 2, screen_y / 2, NULL);
+					LineTo(hDC, xArrowHour, yArrowHour);
+					SelectObject(hDC, penArrowMinute);
+					MoveToEx(hDC, screen_x / 2, screen_y / 2, NULL);
+					LineTo(hDC, xArrowMinute, yArrowMinute);
+					SelectObject(hDC, penArrowSecond);
+					MoveToEx(hDC, screen_x / 2, screen_y / 2, NULL);
+					LineTo(hDC, xArrowSecond, yArrowSecond);
+					SelectObject(hDC, penDefault);
 					break;
 				}
 			default:
@@ -442,6 +587,49 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					InvalidateRect(hWnd, NULL, TRUE);
 					break;
 				}
+			case 4:
+				{
+					++timer6;
+					angleArrowSecond -=0.6;
+
+					if (angleArrowSecond < -360.0)
+					{
+						angleArrowSecond = 0.0;
+					}
+
+					xArrowSecond = 310 * cos(angleArrowSecond * M_PI / 180) + screen_x / 2;
+					yArrowSecond = -310 * sin(angleArrowSecond * M_PI / 180) + screen_y / 2;
+
+					if (timer6 % 60 == 0)
+					{
+						angleArrowMinute -= 0.6;
+
+						if (angleArrowMinute < -360.0)
+						{
+							angleArrowMinute = 0.0;
+						}
+
+						xArrowMinute = 290 * cos(angleArrowMinute * M_PI / 180) + screen_x / 2;
+						yArrowMinute = -290 * sin(angleArrowMinute * M_PI / 180) + screen_y / 2;
+					}
+
+					if (timer6 % 720 == 0)
+					{
+						angleArrowHour -= 0.6;
+						timer6 = 0;
+
+						if (angleArrowHour < -360.0)
+						{
+							angleArrowHour = 0.0;
+						}
+
+						xArrowHour = 180 * cos(angleArrowHour * M_PI / 180) + screen_x / 2;
+						yArrowHour = -180 * sin(angleArrowHour * M_PI / 180) + screen_y / 2;
+					}
+
+					InvalidateRect(hWnd, NULL, TRUE);
+					break;
+				}
 			}
 
 			break;
@@ -451,9 +639,16 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DeleteObject(brColorBtn);
 			DeleteObject(brColorBtnClick);
 			DeleteObject(wood);
+			DeleteObject(timer_circle);
+			DeleteObject(tempScr);
+			DeleteObject(penArrowSecond);
+			DeleteObject(penArrowMinute);
+			DeleteObject(penArrowHour);
+			DeleteObject(penDefault);
 			KillTimer(hWnd, 1);
 			KillTimer(hWnd, 2);
 			KillTimer(hWnd, 3);
+			KillTimer(hWnd, 4);
 			PostQuitMessage(0);
 			break;
 		}
