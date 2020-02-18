@@ -253,7 +253,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	case WM_ACTIVATEAPP:
 		{
-			//SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 1);
+			SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 1);
 			break;
 		}
 	case WM_PAINT:
