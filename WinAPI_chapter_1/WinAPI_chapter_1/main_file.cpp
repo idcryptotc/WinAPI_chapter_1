@@ -80,9 +80,9 @@ int __stdcall _tWinMain(HINSTANCE This, HINSTANCE Prev, LPTSTR cmd, int mode)
 
 LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	HDC hdc, hDC;
-	HBITMAP hScreen, oldBmp;
-	PAINTSTRUCT ps;
+	static HDC hdc = NULL, hDC;
+	static HBITMAP hScreen, oldBmp = NULL;
+	static PAINTSTRUCT ps;
 	static const RECT btnClose = { screen_x - 30, 0, screen_x, 30 };
 	static const TCHAR textBtnClose[] = _T("X");
 	static HBRUSH brColorBtn = CreateSolidBrush(RGB(200, 0, 0));
@@ -117,7 +117,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static POINT startCentre = { screen_x / 2, screen_y / 2 };
 	static int speedBall = 5;
 	static HBITMAP wood = LoadBitmap(hMain, MAKEINTRESOURCE(IDB_BITMAP1));
-	HBITMAP tempScr = NULL;
+	static HBITMAP tempScr = NULL;
 	std::string coord;
 	static int x = rand() % ((screen_x - 20) * 3 / 4) + 10;
 	static int y = rand() % ((screen_y - 80) * 3 / 4) + 70;
@@ -426,6 +426,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case 3:
 				{
 					HDC mem = CreateCompatibleDC(hDC);
+					DeleteObject(tempScr);
 					tempScr = CreateCompatibleBitmap(hDC, screen_x, screen_y);
 					SelectObject(mem, wood);
 					BitBlt(hDC, screen_x / 2 - 293, screen_y / 2 - 293, 586, 586, mem, 0, 0, SRCCOPY);
@@ -451,6 +452,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case 5:
 				{
 					HDC mem = CreateCompatibleDC(hDC);
+					DeleteObject(tempScr);
 					tempScr = CreateCompatibleBitmap(hDC, screen_x, screen_y);
 					SelectObject(mem, timer_circle);
 					BitBlt
@@ -639,6 +641,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DeleteObject(brColorBtn);
 			DeleteObject(brColorBtnClick);
 			DeleteObject(wood);
+			DeleteObject(oldBmp);
 			DeleteObject(timer_circle);
 			DeleteObject(tempScr);
 			DeleteObject(penArrowSecond);
@@ -649,6 +652,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			KillTimer(hWnd, 2);
 			KillTimer(hWnd, 3);
 			KillTimer(hWnd, 4);
+			DeleteDC(hdc);
 			PostQuitMessage(0);
 			break;
 		}
