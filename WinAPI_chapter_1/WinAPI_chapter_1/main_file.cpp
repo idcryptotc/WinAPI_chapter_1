@@ -140,6 +140,8 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static double angleArrowHour = -270.0;
 	static int timer6 = 0;
 	static SYSTEMTIME st;
+	static const TCHAR *str7 = _T("Эта седьмая задача требует издевательства над шрифтом :)");
+	static HFONT font7 = NULL, font7old = NULL;
 
 	switch (message)
 	{
@@ -369,7 +371,8 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			hScreen = CreateCompatibleBitmap(hdc, screen_x, screen_y);
 			oldBmp = (HBITMAP)SelectObject(hDC, hScreen);
 			PatBlt(hDC, 0, 0, screen_x, screen_y, WHITENESS);
-
+			static HFONT mainFont = (HFONT)SelectObject(hDC, GetStockObject(ANSI_VAR_FONT));
+			SelectObject(hDC, mainFont);
 			//------------------
 			// Кнопка "Закрыть" 
 			//------------------
@@ -472,6 +475,32 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					MoveToEx(hDC, screen_x / 2, screen_y / 2, NULL);
 					LineTo(hDC, xArrowSecond, yArrowSecond);
 					SelectObject(hDC, penDefault);
+					break;
+				}
+			case 6:
+				{
+					SelectObject(hDC, GetStockObject(ANSI_VAR_FONT));
+					SetBkMode(hdc, TRANSPARENT);
+					SetBkColor(hDC, RGB(255, 255, 255));
+					SetTextColor(hDC, RGB(0, 0, 0));
+
+					for (int i = 12, h = 70 + i; i < 100;i += 8,h+=i)
+					{
+						font7 = CreateFont
+						(
+							i, 0, 0, 0, 0, 0, 0, 0,
+							DEFAULT_CHARSET,
+							OUT_DEFAULT_PRECIS,
+							CLIP_DEFAULT_PRECIS,
+							DEFAULT_QUALITY,
+							DEFAULT_PITCH | FF_DONTCARE,
+							_T("Times New Roman")
+						);
+						font7old = (HFONT)SelectObject(hDC, font7);
+						TextOut(hDC, 20, h, str7, _tcsclen(str7));
+						SelectObject(hDC, font7old);
+						DeleteObject(font7);
+					}
 					break;
 				}
 			default:
@@ -641,6 +670,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DeleteObject(penArrowMinute);
 			DeleteObject(penArrowHour);
 			DeleteObject(penDefault);
+			DeleteObject(font7old);
 			KillTimer(hWnd, 1);
 			KillTimer(hWnd, 2);
 			KillTimer(hWnd, 3);
