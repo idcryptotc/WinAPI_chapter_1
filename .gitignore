@@ -41,3 +41,10 @@
 /WinAPI_chapter_1/timer.png
 /WinAPI_chapter_1/Timer-1160x1160.png
 /WinAPI_chapter_1/WinAPI_chapter_1/Release
+/WinAPI_chapter_1/Release/*.gitignore
+/WinAPI_chapter_1/Release/*.iobj
+/WinAPI_chapter_1/Release/*.ipdb
+/WinAPI_chapter_1/Release/*.pdb
+/WinAPI_chapter_1/.vs
+/WinAPI_chapter_1/*.db
+/WinAPI_chapter_1/WinAPI_chapter_1/x64
