@@ -8,6 +8,8 @@
 #include <time.h>
 #include <list>
 #include <iterator>
+#pragma warning(push)
+#pragma warning(disable:4244)
 
 LRESULT __stdcall WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -503,6 +505,52 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 					break;
 				}
+			case 7:
+				{
+					SelectObject(hDC, GetStockObject(ANSI_VAR_FONT));
+					SetBkMode(hdc, TRANSPARENT);
+					SetBkColor(hDC, RGB(255, 255, 255));
+					SetTextColor(hDC, RGB(0, 0, 0));
+					TEXTMETRIC tm;
+					HFONT f = CreateFont
+					(
+						20, 0, 0, 0, 0, 0, 0, 0,
+						DEFAULT_CHARSET,
+						OUT_DEFAULT_PRECIS,
+						CLIP_DEFAULT_PRECIS,
+						DEFAULT_QUALITY,
+						DEFAULT_PITCH | FF_DONTCARE,
+						_T("Times New Roman")
+					);
+					SelectObject(hDC, f);
+					GetTextMetrics(hDC, &tm);
+					RECT rtForMetrics = { 20, 80, screen_x - 20, screen_y - 20 };
+					std::string tmStr = "Times New Roman\
+						\ntmHeight (Высота) = " + std::to_string(tm.tmHeight) + "\n" +
+						"tmAscent (Высота вместе с надстрочником) = " + std::to_string(tm.tmAscent) + "\n" +
+						"tmDescent (Высота подстрочника) = " + std::to_string(tm.tmDescent) + "\n" +
+						"tmInternalLeading (Высота межстрочного пространства) = " + std::to_string(tm.tmInternalLeading) + "\n" +
+						"tmExternalLeading (Дополнительная высота межстрочного пространства) = " + std::to_string(tm.tmExternalLeading) + "\n" +
+						"tmAveCharWidth (Средняя ширина символа) = " + std::to_string(tm.tmAveCharWidth) + "\n" +
+						"tmMaxCharWidth (Макксимальная ширина символа) = " + std::to_string(tm.tmMaxCharWidth) + "\n" +
+						"tmWeight (Толщина) = " + std::to_string(tm.tmWeight) + "\n" +
+						"tmOverhang (Дополнительная ширина строки) = " + std::to_string(tm.tmOverhang) + "\n" +
+						"tmDigitizedAspectX (Горизонтальная координата) = " + std::to_string(tm.tmDigitizedAspectX) + "\n" +
+						"tmDigitizedAspectY (Вертикальная координата) = " + std::to_string(tm.tmDigitizedAspectY) + "\n" +
+						"tmFirstChar (Значение первого символа) = " + std::to_string(tm.tmFirstChar) + "\n" +
+						"tmLastChar (Значение последнего символа) = " + std::to_string(tm.tmLastChar) + "\n" +
+						"tmDefaultChar (Символ по умолчанию) = " + std::to_string(tm.tmDefaultChar) + "\n" +
+						"tmBreakChar (Символ границы слова для выравнивания) = " + std::to_string(tm.tmBreakChar) + "\n" +
+						"tmItalic (Курсивный) = " + std::to_string(tm.tmItalic) + "\n" +
+						"tmUnderlined (Подчёркнутый) = " + std::to_string(tm.tmUnderlined) + "\n" +
+						"tmStruckOut (Зачёркнутый) = " + std::to_string(tm.tmStruckOut) + "\n" +
+						"tmPitchAndFamily (Какая-то инфа) = " + std::to_string(tm.tmPitchAndFamily) + "\n" +
+						"tmCharSet (Набор символов) = " + std::to_string(tm.tmCharSet) + "\n";
+					DrawText(hDC, tmStr.data(), tmStr.size(), &rtForMetrics, DT_LEFT);
+					SelectObject(hDC, mainFont);
+					DeleteObject(f);
+					break;
+				}
 			default:
 				{
 					break;
@@ -687,3 +735,4 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	return 0;
 }
+#pragma warning(pop)
