@@ -8,6 +8,7 @@
 #include <time.h>
 #include <list>
 #include <iterator>
+#include <fstream>
 #pragma warning(push)
 #pragma warning(disable:4244)
 
@@ -80,6 +81,14 @@ int __stdcall _tWinMain(HINSTANCE This, HINSTANCE Prev, LPTSTR cmd, int mode)
 	return 0;
 }
 
+void transform(HDC& hdc)
+{
+	SetMapMode(hdc, MM_ANISOTROPIC);
+	SetWindowExtEx(hdc, 1000, -1000, NULL);
+	SetViewportExtEx(hdc, screen_x, screen_y, NULL);
+	SetViewportOrgEx(hdc, 0, screen_y, NULL);
+}
+
 LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static HDC hdc = NULL, hDC;
@@ -144,6 +153,16 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static SYSTEMTIME st;
 	static const TCHAR *str7 = _T("Эта седьмая задача требует издевательства над шрифтом :)");
 	static HFONT font7 = NULL, font7old = NULL;
+	static HPEN hDash = CreatePen(PS_DASH, 1, 0);
+	static HPEN hBezier = CreatePen(PS_SOLID, 4, RGB(0, 0, 255));
+	static HBRUSH hRect = CreateSolidBrush(RGB(128, 0, 128));
+	static HBRUSH hSel = CreateSolidBrush(RGB(255, 0, 0));
+	static POINT *arrPoint;
+	static POINT point;
+	RECT rtPoint;
+	static int count = 0, index;
+	static bool isCapture;
+	static const int MARK = 4;
 
 	switch (message)
 	{
@@ -188,13 +207,49 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			break;
 		}
+	case WM_LBUTTONDOWN:
+		{
+			POINT ptMouse = { LOWORD(lParam), HIWORD(lParam) };
+
+			if (ptMouse.y < 70 && ptMouse.x < 350)
+			{
+				break;
+			}
+
+			for (int i = 0; i < count; ++i)
+			{
+				SetRect
+				(
+					&rtPoint,
+					arrPoint[i].x - MARK,
+					arrPoint[i].y - MARK,
+					arrPoint[i].x + MARK,
+					arrPoint[i].y + MARK
+				);
+
+				if (PtInRect(&rtPoint, ptMouse))
+				{
+					index = i;
+					isCapture = true;
+					hDC = GetDC(hWnd);
+					//transform(hDC);
+					FillRect(hDC, &rtPoint, hSel);
+					ReleaseDC(hWnd, hDC);
+					SetCapture(hWnd);
+					return 0;
+				}
+			}
+
+			break;
+		}
 	case WM_LBUTTONUP:
 		{
 			POINT ptMouse = { LOWORD(lParam), HIWORD(lParam) };
 			
 			if (PtInRect(&btnClose, ptMouse))
 			{
-				PostQuitMessage(0);
+				DestroyWindow(hWnd);
+				//PostQuitMessage(0);
 			}
 			else
 			{
@@ -229,7 +284,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						step += 10;
 					}
 				}
-				
+
 				if (isMenu && indexCurrent == 1)
 				{
 					SetTimer(hWnd, 1, 1000, NULL);
@@ -280,7 +335,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						MessageBox(hWnd, coord.data(), _T("Клетка"), MB_OK);
 					}
 				}
-				
+
 				if (isMenu && indexCurrent == 4)
 				{
 					SetTimer(hWnd, 3, 100, NULL);
@@ -313,6 +368,50 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						KillTimer(hWnd, 4);
 						isStartTimer = false;
 					}
+				}
+
+				if (isMenu && (indexCurrent == 8 || indexCurrent == 9))
+				{
+					std::ifstream in;
+					in.open("LineBezier.dat", std::ios::binary);
+
+					if (in.fail())
+					{
+						MessageBox(hWnd, _T("Файл LineBezier.dat не найден"),
+								   _T("Открытие файла"), MB_OK | MB_ICONEXCLAMATION);
+						mb[indexCurrent].color = brColorBtn;
+						indexCurrent = -1;
+					}
+					else
+					{
+						int size;
+						unsigned char ch[4];
+						in >> ch[3] >> ch[2] >> ch[1] >> ch[0];
+						size = *reinterpret_cast<int*>(ch);
+						arrPoint = new POINT[size];
+						count = size;
+
+						for (int i = 0; i < size; ++i)
+						{
+							in >> ch[3] >> ch[2] >> ch[1] >> ch[0];
+							arrPoint[i].x = *reinterpret_cast<int*>(ch);
+							in >> ch[3] >> ch[2] >> ch[1] >> ch[0];
+							arrPoint[i].y = *reinterpret_cast<int*>(ch);
+						}
+					}
+
+					in.close();
+				}
+
+				if (!isMenu && (indexCurrent == 8 || indexCurrent == 9))
+				{
+					if (isCapture)
+					{
+						ReleaseCapture();
+						isCapture = false;
+					}
+
+					break;
 				}
 			}
 
@@ -361,9 +460,21 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			InvalidateRect(hWnd, NULL, TRUE);
 			break;
 		}
+	case WM_MOUSEMOVE:
+		{
+			if ((indexCurrent == 8 || indexCurrent == 9) && isCapture)
+			{
+				point.x = LOWORD(lParam);
+				point.y = HIWORD(lParam);
+				arrPoint[index] = point;
+				InvalidateRect(hWnd, NULL, TRUE);
+			}
+
+			break;
+		}
 	case WM_ACTIVATEAPP:
 		{
-			SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 1);
+			//SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 1);
 			break;
 		}
 	case WM_PAINT:
@@ -551,11 +662,38 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					DeleteObject(f);
 					break;
 				}
+			case 8: case 9:
+				{
+					//transform(hDC);
+					SelectObject(hDC, hDash);
+					Polyline(hDC, arrPoint, count);
+					SelectObject(hDC, hBezier);
+					PolyBezier(hDC, arrPoint, count);
+
+					for (int i = 0; i < count; ++i)
+					{
+						SetRect
+						(
+							&rtPoint,
+							arrPoint[i].x - MARK,
+							arrPoint[i].y - MARK,
+							arrPoint[i].x + MARK,
+							arrPoint[i].y + MARK
+						);
+
+						FillRect(hDC, &rtPoint, hRect);
+					}
+				}
 			default:
 				{
 					break;
 				}
 			}
+
+			SetMapMode(hDC, MM_TEXT);
+			SetWindowExtEx(hDC, screen_x, screen_y, NULL);
+			SetViewportExtEx(hDC, screen_x, screen_y, NULL);
+			SetViewportOrgEx(hDC, 0, 0, NULL);
 			BitBlt(hdc, 0, 0, screen_x, screen_y, hDC, 0, 0, SRCCOPY);
 			SelectObject(hDC, oldBmp);
 			DeleteObject(hScreen);
@@ -719,11 +857,41 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DeleteObject(penArrowHour);
 			DeleteObject(penDefault);
 			DeleteObject(font7old);
+			DeleteObject(hDash);
+			DeleteObject(hBezier);
+			DeleteObject(hRect);
+			DeleteObject(hSel);
+			std::ofstream out;
+			out.open("LineBezier.dat", std::ios::binary);
+			
+			if (!out.fail())
+			{
+				for (int i = sizeof(count) - 1; i >= 0; --i)
+				{
+					out << static_cast<unsigned char>((count >> (i * 8)) & 0xff);
+				}
+
+				for (int i = 0;i < count; ++i)
+				{
+					for (int j = sizeof(arrPoint[i].x) - 1; j >= 0; --j)
+					{
+						out << static_cast<unsigned char>((arrPoint[i].x >> (j * 8)) & 0xff);
+					}
+
+					for (int j = sizeof(arrPoint[i].y) - 1; j >= 0; --j)
+					{
+						out << static_cast<unsigned char>((arrPoint[i].y >> (j * 8)) & 0xff);
+					}
+				}
+			}
+			
+			out.close();
 			KillTimer(hWnd, 1);
 			KillTimer(hWnd, 2);
 			KillTimer(hWnd, 3);
 			KillTimer(hWnd, 4);
 			DeleteDC(hdc);
+			delete[] arrPoint;
 			PostQuitMessage(0);
 			break;
 		}
