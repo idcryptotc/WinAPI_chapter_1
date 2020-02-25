@@ -373,7 +373,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				if (isMenu && (indexCurrent == 8 || indexCurrent == 9))
 				{
 					std::ifstream in;
-					in.open("LineBezier.dat", std::ios::binary);
+					in.open("LineBezier.dat"/*, std::ios::binary*/);
 
 					if (in.fail())
 					{
@@ -385,18 +385,14 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					else
 					{
 						int size;
-						unsigned char ch[4];
-						in >> ch[3] >> ch[2] >> ch[1] >> ch[0];
-						size = *reinterpret_cast<int*>(ch);
+						in >> size;
 						arrPoint = new POINT[size];
 						count = size;
 
 						for (int i = 0; i < size; ++i)
 						{
-							in >> ch[3] >> ch[2] >> ch[1] >> ch[0];
-							arrPoint[i].x = *reinterpret_cast<int*>(ch);
-							in >> ch[3] >> ch[2] >> ch[1] >> ch[0];
-							arrPoint[i].y = *reinterpret_cast<int*>(ch);
+							in >> arrPoint[i].x;
+							in >> arrPoint[i].y;
 						}
 					}
 
@@ -862,26 +858,16 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DeleteObject(hRect);
 			DeleteObject(hSel);
 			std::ofstream out;
-			out.open("LineBezier.dat", std::ios::binary);
+			out.open("LineBezier.dat");
 			
 			if (!out.fail())
 			{
-				for (int i = sizeof(count) - 1; i >= 0; --i)
-				{
-					out << static_cast<unsigned char>((count >> (i * 8)) & 0xff);
-				}
+				out << count << std::endl;
 
 				for (int i = 0;i < count; ++i)
 				{
-					for (int j = sizeof(arrPoint[i].x) - 1; j >= 0; --j)
-					{
-						out << static_cast<unsigned char>((arrPoint[i].x >> (j * 8)) & 0xff);
-					}
-
-					for (int j = sizeof(arrPoint[i].y) - 1; j >= 0; --j)
-					{
-						out << static_cast<unsigned char>((arrPoint[i].y >> (j * 8)) & 0xff);
-					}
+					out << arrPoint[i].x << '\t';
+					out << arrPoint[i].y << std::endl;
 				}
 			}
 			
