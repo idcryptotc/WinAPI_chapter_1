@@ -165,6 +165,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static const int MARK = 4;
 	static std::string str89 = "";
 	static bool isCtrlLMB = false;
+	static int roflCounter = 3;
 
 	switch (message)
 	{
@@ -404,7 +405,6 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				if (isMenu && (indexCurrent == 8 || indexCurrent == 9))
 				{
-					str89 = indexCurrent == 8 ? "Жмякай ПКМ на точке на кривой или по пустоте" : "Жмякай Ctrl+ЛКМ куда-нибудь, окромя кнопок";
 					std::ifstream in;
 					in.open("LineBezier.dat"/*, std::ios::binary*/);
 
@@ -414,6 +414,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 								   _T("Открытие файла"), MB_OK | MB_ICONEXCLAMATION);
 						mb[indexCurrent].color = brColorBtn;
 						indexCurrent = -1;
+						--roflCounter;
 					}
 					else
 					{
@@ -430,6 +431,39 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 
 					in.close();
+
+					if (roflCounter == 0)
+					{
+						arrPoint = new POINT[1];
+						arrPoint[0].x = screen_x / 2;
+						arrPoint[0].y = screen_y / 2;
+						count = 1;
+						roflCounter = 3;
+						MessageBox(hWnd, _T("Файл LineBezier.dat не найден, но держи точку! А дальше сам через №9"),
+								   _T("Немножко пряников:)"), MB_OK | MB_ICONINFORMATION);
+						indexCurrent = 8;
+						mb[indexCurrent].color = brColorBtnClick;
+						std::ofstream out;
+						out.open("LineBezier.dat");
+
+						if (!out.fail())
+						{
+							out << count << std::endl;
+
+							for (int i = 0;i < count; ++i)
+							{
+								out << arrPoint[i].x << '\t';
+								out << arrPoint[i].y << std::endl;
+							}
+						}
+
+						out.close();
+					}
+
+					if (count > 0)
+					{
+						str89 = indexCurrent == 8 ? "Жмякай ПКМ на точке на кривой или по пустоте" : "Жмякай Ctrl+ЛКМ куда-нибудь, окромя кнопок";
+					}
 				}
 
 				if (!isMenu && (indexCurrent == 8 || indexCurrent == 9))
@@ -569,7 +603,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	case WM_ACTIVATEAPP:
 		{
-			//SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 1);
+			SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 1);
 			break;
 		}
 	case WM_PAINT:
