@@ -295,6 +295,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							}
 
 							out.close();
+							delete[] arrPoint;
 						}
 
 						indexCurrent = i;
@@ -794,6 +795,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case 8: case 9:
 				{
 					//transform(hDC);
+					SetBkColor(hDC, RGB(255, 255, 255));
 					SelectObject(hDC, hDash);
 					Polyline(hDC, arrPoint, count);
 					SelectObject(hDC, hBezier);
