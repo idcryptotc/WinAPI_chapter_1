@@ -163,6 +163,8 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static int count = 0, index;
 	static bool isCapture;
 	static const int MARK = 4;
+	static std::string str89 = "";
+	static bool isCtrlLMB = false;
 
 	switch (message)
 	{
@@ -210,33 +212,42 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDOWN:
 		{
 			POINT ptMouse = { LOWORD(lParam), HIWORD(lParam) };
-
-			if (ptMouse.y < 70 && ptMouse.x < 350)
+			
+			if (indexCurrent == 8 || indexCurrent == 9)
 			{
-				break;
-			}
-
-			for (int i = 0; i < count; ++i)
-			{
-				SetRect
-				(
-					&rtPoint,
-					arrPoint[i].x - MARK,
-					arrPoint[i].y - MARK,
-					arrPoint[i].x + MARK,
-					arrPoint[i].y + MARK
-				);
-
-				if (PtInRect(&rtPoint, ptMouse))
+				if (ptMouse.y < 70 && ptMouse.x < 350)
 				{
-					index = i;
-					isCapture = true;
-					hDC = GetDC(hWnd);
-					//transform(hDC);
-					FillRect(hDC, &rtPoint, hSel);
-					ReleaseDC(hWnd, hDC);
-					SetCapture(hWnd);
-					return 0;
+					break;
+				}
+
+				for (int i = 0; i < count; ++i)
+				{
+					SetRect
+					(
+						&rtPoint,
+						arrPoint[i].x - MARK,
+						arrPoint[i].y - MARK,
+						arrPoint[i].x + MARK,
+						arrPoint[i].y + MARK
+					);
+
+					if (PtInRect(&rtPoint, ptMouse))
+					{
+						index = i;
+						isCapture = true;
+						hDC = GetDC(hWnd);
+						//transform(hDC);
+						FillRect(hDC, &rtPoint, hSel);
+						ReleaseDC(hWnd, hDC);
+						SetCapture(hWnd);
+						return 0;
+					}
+				}
+
+				if (MK_CONTROL & wParam && indexCurrent == 9)
+				{
+					isCtrlLMB = true;
+					InvalidateRect(hWnd, NULL, TRUE);
 				}
 			}
 
@@ -245,7 +256,9 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONUP:
 		{
 			POINT ptMouse = { LOWORD(lParam), HIWORD(lParam) };
-			
+			isCtrlLMB = false;
+			InvalidateRect(hWnd, NULL, TRUE);
+
 			if (PtInRect(&btnClose, ptMouse))
 			{
 				DestroyWindow(hWnd);
@@ -391,6 +404,7 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				if (isMenu && (indexCurrent == 8 || indexCurrent == 9))
 				{
+					str89 = indexCurrent == 8 ? "Жмякай ПКМ на точке на кривой или по пустоте" : "Жмякай Ctrl+ЛКМ куда-нибудь, окромя кнопок";
 					std::ifstream in;
 					in.open("LineBezier.dat"/*, std::ios::binary*/);
 
@@ -516,19 +530,21 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				}
 
-				if (isFound)
+				if (!isFound)
 				{
 					POINT * temp = new POINT[count + 3];
-					count += 3;
 
-					for (int j = 0, k = 0; j < count - 3; ++j, ++k)
+					for (int j = 0, k = 0; j < count; ++j, ++k)
 					{
 						temp[j] = arrPoint[k];
 					}
 
+					POINT ptToPtMouse = { -(temp[count-1].x - ptMouse.x) / 3, -(temp[count-1].y - ptMouse.y) / 3 };
+					count += 3;
+
 					for (int j = count - 3; j < count; ++j)
 					{
-						//temp[j] = { temp[j - 1].x + ptMouse.x, temp[j - 1].y + ptMouse.y };
+						temp[j] = { temp[j - 1].x + ptToPtMouse.x, temp[j - 1].y + ptToPtMouse.y };
 					}
 
 					delete[] arrPoint;
@@ -761,6 +777,21 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						);
 
 						FillRect(hDC, &rtPoint, hRect);
+					}
+					
+					SetBkMode(hDC, TRANSPARENT);
+					SetTextColor(hDC, RGB(0, 0, 0));
+					TextOut(hDC, 350, 36, str89.data(), str89.size());
+
+					if (isCtrlLMB)
+					{
+						std::string strCoord = "";
+
+						for (int i = 0;i < count;i += 3)
+						{
+							strCoord = std::to_string(arrPoint[i].x) + ", " + std::to_string(arrPoint[i].y);
+							TextOut(hDC, arrPoint[i].x + 5, arrPoint[i].y - MARK, strCoord.data(), strCoord.size());
+						}
 					}
 				}
 			default:
