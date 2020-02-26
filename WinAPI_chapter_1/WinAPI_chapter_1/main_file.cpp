@@ -476,7 +476,9 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			if (indexCurrent == 8)
 			{
-				for (int i = 3; i < count; i+=3)
+				bool isFound = false;
+
+				for (int i = 0; i < count; ++i)
 				{
 					SetRect
 					(
@@ -489,23 +491,48 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 					if (PtInRect(&rtPoint, ptMouse))
 					{
-						POINT * temp = new POINT[count - 3];
-						count -= 3;
+						isFound = true;
 
-						for (int j = 0, k = 0; j < count; ++j, ++k)
+						if (i >= 3 && i % 3 == 0)
 						{
-							while (k >= i - 2 && k <= i)
+							POINT * temp = new POINT[count - 3];
+							count -= 3;
+
+							for (int j = 0, k = 0; j < count; ++j, ++k)
 							{
-								++k;
+								while (k >= i - 2 && k <= i)
+								{
+									++k;
+								}
+
+								temp[j] = arrPoint[k];
 							}
 
-							temp[j] = arrPoint[k];
+							delete[] arrPoint;
+							arrPoint = temp;
 						}
 
-						delete[] arrPoint;
-						arrPoint = temp;
 						break;
 					}
+				}
+
+				if (isFound)
+				{
+					POINT * temp = new POINT[count + 3];
+					count += 3;
+
+					for (int j = 0, k = 0; j < count - 3; ++j, ++k)
+					{
+						temp[j] = arrPoint[k];
+					}
+
+					for (int j = count - 3; j < count; ++j)
+					{
+						//temp[j] = { temp[j - 1].x + ptMouse.x, temp[j - 1].y + ptMouse.y };
+					}
+
+					delete[] arrPoint;
+					arrPoint = temp;
 				}
 			}
 
