@@ -264,6 +264,25 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							mb[indexCurrent].color = brColorBtn;
 						}
 
+						if (indexCurrent == 8 && i != 8 || indexCurrent == 9 && i != 9)
+						{
+							std::ofstream out;
+							out.open("LineBezier.dat");
+
+							if (!out.fail())
+							{
+								out << count << std::endl;
+
+								for (int i = 0;i < count; ++i)
+								{
+									out << arrPoint[i].x << '\t';
+									out << arrPoint[i].y << std::endl;
+								}
+							}
+
+							out.close();
+						}
+
 						indexCurrent = i;
 						mb[i].color = brColorBtnClick;
 						isMenu = true;
@@ -416,6 +435,8 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	case WM_RBUTTONUP:
 		{
+			POINT ptMouse = { LOWORD(lParam), HIWORD(lParam) };
+
 			if (indexCurrent == 0)
 			{
 				if (!(rForOne.right + step - 10 < screen_x / 2 + 10 || rForOne.bottom + step - 10 < screen_y / 2 + 10))
@@ -450,6 +471,41 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					isStartTimer = false;
 					KillTimer(hWnd, 4);
+				}
+			}
+
+			if (indexCurrent == 8)
+			{
+				for (int i = 3; i < count; i+=3)
+				{
+					SetRect
+					(
+						&rtPoint,
+						arrPoint[i].x - MARK,
+						arrPoint[i].y - MARK,
+						arrPoint[i].x + MARK,
+						arrPoint[i].y + MARK
+					);
+
+					if (PtInRect(&rtPoint, ptMouse))
+					{
+						POINT * temp = new POINT[count - 3];
+						count -= 3;
+
+						for (int j = 0, k = 0; j < count; ++j, ++k)
+						{
+							while (k >= i - 2 && k <= i)
+							{
+								++k;
+							}
+
+							temp[j] = arrPoint[k];
+						}
+
+						delete[] arrPoint;
+						arrPoint = temp;
+						break;
+					}
 				}
 			}
 
@@ -857,21 +913,26 @@ LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			DeleteObject(hBezier);
 			DeleteObject(hRect);
 			DeleteObject(hSel);
-			std::ofstream out;
-			out.open("LineBezier.dat");
 			
-			if (!out.fail())
+			if (indexCurrent == 8 || indexCurrent == 9)
 			{
-				out << count << std::endl;
+				std::ofstream out;
+				out.open("LineBezier.dat");
 
-				for (int i = 0;i < count; ++i)
+				if (!out.fail())
 				{
-					out << arrPoint[i].x << '\t';
-					out << arrPoint[i].y << std::endl;
+					out << count << std::endl;
+
+					for (int i = 0;i < count; ++i)
+					{
+						out << arrPoint[i].x << '\t';
+						out << arrPoint[i].y << std::endl;
+					}
 				}
+
+				out.close();
 			}
-			
-			out.close();
+
 			KillTimer(hWnd, 1);
 			KillTimer(hWnd, 2);
 			KillTimer(hWnd, 3);
